@@ -28,7 +28,7 @@ const MaintenancePage: React.FC<MaintenancePageProps> = ({ user }) => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   
-  // Hanya ambil aset aktif yang memiliki stok untuk diservis
+  // Ambil aset aktif dengan stok > 0
   const equipments = db.getEquipments().filter(e => e.status === EquipmentStatus.ACTIVE && e.stock > 0);
   const isAdmin = user.role === UserRole.ADMIN;
 
@@ -40,7 +40,7 @@ const MaintenancePage: React.FC<MaintenancePageProps> = ({ user }) => {
     cost: 0,
     quantity: 1,
     note: '',
-    setUnderRepair: true // Secara default diaktifkan agar masuk ke Dashboard "SEDANG SERVIS"
+    setUnderRepair: true 
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -74,13 +74,12 @@ const MaintenancePage: React.FC<MaintenancePageProps> = ({ user }) => {
 
   const handleDelete = (e: React.MouseEvent, id: string) => {
     e.preventDefault();
-    e.stopPropagation(); // Sangat penting agar tidak memicu klik toggle baris
+    e.stopPropagation(); // Mencegah klik menyebar ke toggle detail baris
     
     if (!isAdmin) return;
     
-    if (window.confirm("Hapus catatan maintenance ini? Tindakan ini akan tercatat di audit log.")) {
+    if (window.confirm("Hapus catatan maintenance ini? Tindakan ini hanya menghapus log, tidak mengembalikan stok otomatis.")) {
       db.deleteMaintenance(id);
-      // Update state UI seketika
       setMaintenances(db.getMaintenances());
     }
   };
@@ -94,13 +93,13 @@ const MaintenancePage: React.FC<MaintenancePageProps> = ({ user }) => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Riwayat Maintenance</h1>
-          <p className="text-slate-500">Log pemeliharaan, biaya service, dan monitoring unit</p>
+          <p className="text-slate-500">Log pemeliharaan dan monitoring unit sedang servis</p>
         </div>
         <div className="flex items-center space-x-3">
           {saveSuccess && (
             <div className="flex items-center space-x-2 text-green-600 bg-green-50 px-3 py-1.5 rounded-lg border border-green-100 animate-in fade-in slide-in-from-right-2">
               <CheckCircle2 size={16} />
-              <span className="text-sm font-semibold">Tersimpan & Dashboard Terupdate</span>
+              <span className="text-sm font-semibold">Tersimpan</span>
             </div>
           )}
           {isAdmin && (
@@ -123,7 +122,7 @@ const MaintenancePage: React.FC<MaintenancePageProps> = ({ user }) => {
             </div>
             <div>
               <h3 className="text-xl font-bold text-slate-900">Belum Ada Data Maintenance</h3>
-              <p className="text-slate-500 max-w-xs mx-auto">Mulai catat pemeliharaan aset untuk melacak unit yang sedang diservis dan biaya operasional.</p>
+              <p className="text-slate-500 max-w-xs mx-auto">Mulai catat pemeliharaan untuk monitoring aset di Dashboard.</p>
             </div>
           </div>
         ) : (
@@ -159,14 +158,14 @@ const MaintenancePage: React.FC<MaintenancePageProps> = ({ user }) => {
                     onClick={() => toggleExpand(record.id)}
                     className="flex items-center justify-center space-x-2 text-slate-400 hover:text-orange-600 font-bold transition-colors px-4 py-2 hover:bg-orange-50 rounded-xl"
                   >
-                    <span className="text-sm">Detail Log</span>
+                    <span className="text-sm">Detail</span>
                     {expandedId === record.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                   </button>
                   {isAdmin && (
                     <button 
                       type="button"
                       onClick={(e) => handleDelete(e, record.id)}
-                      className="p-3 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all relative z-20 cursor-pointer"
+                      className="p-3 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
                       title="Hapus Log"
                     >
                       <Trash2 size={20} />
@@ -181,10 +180,9 @@ const MaintenancePage: React.FC<MaintenancePageProps> = ({ user }) => {
                     <div className="flex items-start space-x-3">
                        <Clock size={16} className="text-slate-400 mt-0.5" />
                        <div>
-                          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Catatan Pemeliharaan</p>
-                          <p className="text-sm text-slate-600 leading-relaxed">
+                          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Catatan Service</p>
+                          <p className="text-sm text-slate-600">
                             Log servis ID <strong>{record.id}</strong>. Sebanyak <strong>{record.quantity} unit</strong> {record.equipmentName} diproses pada {record.date}. 
-                            Teknisi: {record.technician}. Total biaya Rp {record.cost.toLocaleString()}.
                           </p>
                        </div>
                     </div>
@@ -211,102 +209,46 @@ const MaintenancePage: React.FC<MaintenancePageProps> = ({ user }) => {
                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Pilih Aset Aktif</label>
                 <select 
                   required
-                  className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-orange-100 focus:border-orange-600 transition-all outline-none font-medium"
+                  className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-orange-100 focus:border-orange-600 outline-none transition-all font-medium"
                   value={formData.equipmentId}
                   onChange={(e) => setFormData({...formData, equipmentId: e.target.value})}
                 >
                   <option value="">Pilih Aset...</option>
                   {equipments.map(eq => (
-                    <option key={eq.id} value={eq.id}>{eq.name} (Stok: {eq.stock} Unit)</option>
+                    <option key={eq.id} value={eq.id}>{eq.name} (Tersedia: {eq.stock} Unit)</option>
                   ))}
                 </select>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Tanggal Service</label>
-                  <input 
-                    type="date"
-                    required
-                    className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-orange-100 focus:border-orange-600 transition-all outline-none font-medium"
-                    value={formData.date}
-                    onChange={(e) => setFormData({...formData, date: e.target.value})}
-                  />
+                  <input type="date" required className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl outline-none" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} />
                 </div>
                 <div>
                   <label className="block text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mb-2">Jumlah Unit Servis</label>
-                  <div className="relative">
-                    <Layers size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input 
-                      type="number"
-                      required
-                      min="1"
-                      placeholder="1"
-                      className="w-full pl-12 pr-5 py-3.5 bg-blue-50/50 border border-blue-200 rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-600 transition-all outline-none font-bold text-blue-700"
-                      value={formData.quantity}
-                      onChange={(e) => setFormData({...formData, quantity: parseInt(e.target.value) || 1})}
-                    />
-                  </div>
+                  <input type="number" required min="1" className="w-full px-5 py-3.5 bg-blue-50/50 border border-blue-200 rounded-2xl outline-none font-bold text-blue-700" value={formData.quantity} onChange={(e) => setFormData({...formData, quantity: parseInt(e.target.value) || 1})} />
                 </div>
               </div>
 
               <div>
                 <label className="block text-[10px] font-black text-orange-600 uppercase tracking-[0.2em] mb-2">Total Biaya Service (IDR)</label>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">Rp</span>
-                  <input 
-                    type="number"
-                    required
-                    min="0"
-                    placeholder="0"
-                    className="w-full pl-12 pr-5 py-3.5 bg-orange-50/50 border border-orange-200 rounded-2xl focus:ring-4 focus:ring-orange-100 focus:border-orange-600 transition-all outline-none font-bold text-orange-700"
-                    value={formData.cost}
-                    onChange={(e) => setFormData({...formData, cost: parseInt(e.target.value) || 0})}
-                  />
-                </div>
+                <input type="number" required min="0" className="w-full px-5 py-3.5 bg-orange-50/50 border border-orange-200 rounded-2xl outline-none font-bold text-orange-700" value={formData.cost} onChange={(e) => setFormData({...formData, cost: parseInt(e.target.value) || 0})} />
               </div>
 
               <div>
                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Nama Teknisi / Vendor</label>
-                <div className="relative">
-                  <UserIcon size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input 
-                    required
-                    placeholder="Nama Teknisi..."
-                    className="w-full pl-12 pr-5 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-orange-100 focus:border-orange-600 transition-all outline-none font-medium"
-                    value={formData.technician}
-                    onChange={(e) => setFormData({...formData, technician: e.target.value})}
-                  />
-                </div>
+                <input required placeholder="Nama Teknisi..." className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-medium" value={formData.technician} onChange={(e) => setFormData({...formData, technician: e.target.value})} />
               </div>
 
               <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100 flex items-center space-x-3">
-                <input 
-                  type="checkbox" 
-                  id="setUnderRepair"
-                  className="w-5 h-5 accent-orange-600 cursor-pointer"
-                  checked={formData.setUnderRepair}
-                  onChange={(e) => setFormData({...formData, setUnderRepair: e.target.checked})}
-                />
-                <label htmlFor="setUnderRepair" className="text-xs font-bold text-amber-900 leading-tight cursor-pointer">
-                  Update stok ke Dashboard "Sedang Servis"?
-                </label>
+                <input type="checkbox" id="setUnderRepair" className="w-5 h-5 accent-orange-600 cursor-pointer" checked={formData.setUnderRepair} onChange={(e) => setFormData({...formData, setUnderRepair: e.target.checked})} />
+                <label htmlFor="setUnderRepair" className="text-xs font-bold text-amber-900 cursor-pointer">Update stok ke Dashboard "Sedang Servis"?</label>
               </div>
 
               <div className="pt-4 flex space-x-4">
-                <button 
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="flex-1 py-4 text-slate-500 font-bold hover:bg-slate-50 rounded-2xl transition-all"
-                >
-                  Batal
-                </button>
-                <button 
-                  type="submit"
-                  className="flex-1 py-4 bg-slate-900 text-white font-black rounded-2xl hover:bg-black shadow-xl shadow-slate-200 transition-all"
-                >
-                  Simpan & Update Stok
-                </button>
+                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-4 text-slate-500 font-bold hover:bg-slate-50 rounded-2xl">Batal</button>
+                <button type="submit" className="flex-1 py-4 bg-slate-900 text-white font-black rounded-2xl hover:bg-black shadow-xl">Simpan & Update Stok</button>
               </div>
             </form>
           </div>

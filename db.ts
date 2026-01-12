@@ -183,21 +183,20 @@ class DatabaseService {
 
   getMaintenances() { return [...this.maintenances].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); }
   
-  addMaintenance(m: Omit<Maintenance, 'id'>, updateStatus: boolean = false) {
+  addMaintenance(m: Omit<Maintenance, 'id'>, updateStatus: boolean = true) {
     const eq = this.equipments.find(e => e.id === m.equipmentId);
     if (!eq) return null;
 
     const newM = { ...m, id: `MNT-${Math.floor(100 + Math.random() * 899)}` };
     this.maintenances = [newM, ...this.maintenances];
     
+    // Alur: Maintenance mengurangi stok Active dan membuat stok Under Repair
     if (updateStatus) {
       const actualQty = Math.min(m.quantity, eq.stock);
       
-      if (actualQty >= eq.stock) {
-        // Jika semua unit diservis, ubah status equipment ini saja
+      if (actualQty >= eq.stock && eq.status === EquipmentStatus.ACTIVE) {
         this.updateEquipment(eq.id, { status: EquipmentStatus.UNDER_REPAIR });
-      } else {
-        // Jika hanya sebagian, kurangi stok aktif dan buat entry baru berstatus UNDER_REPAIR
+      } else if (eq.status === EquipmentStatus.ACTIVE) {
         this.updateEquipment(eq.id, { stock: eq.stock - actualQty });
         const repairId = `EQ-${Math.floor(100 + Math.random() * 899)}`;
         const repairEq: Equipment = {
@@ -215,7 +214,7 @@ class DatabaseService {
       equipmentId: m.equipmentId,
       equipmentName: m.equipmentName,
       type: TransactionType.REPAIR,
-      note: `Service Log: ${m.quantity} Unit oleh ${m.technician}. Biaya: Rp ${m.cost.toLocaleString()}`
+      note: `Service Log: ${m.quantity} Unit diservis (${m.technician})`
     });
     
     this.saveToStorage();
@@ -223,16 +222,7 @@ class DatabaseService {
   }
 
   deleteMaintenance(id: string) {
-    const record = this.maintenances.find(m => m.id === id);
-    if (!record) return;
-    
     this.maintenances = this.maintenances.filter(m => m.id !== id);
-    this.addTransaction({
-      equipmentId: record.equipmentId,
-      equipmentName: record.equipmentName,
-      type: TransactionType.OUT,
-      note: `Log Maintenance ${id} dihapus oleh Admin`
-    });
     this.saveToStorage();
   }
 

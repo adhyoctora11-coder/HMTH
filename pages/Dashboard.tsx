@@ -166,7 +166,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
           <p className="mt-4 text-[10px] font-bold text-red-400 uppercase tracking-widest">Non-Operasional</p>
         </div>
 
-        {/* Improved Maintenance Card - Matching Image Logic */}
+        {/* Maintenance Card - Sesuai Gambar Referensi */}
         <div className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100 hover:shadow-md transition-all">
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl">
