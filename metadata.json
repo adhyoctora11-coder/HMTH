@@ -1,6 +1,6 @@
 {
-  "name": "Kitchen Inventory HMTH - Vercel Edition",
-  "description": "Professional inventory management system deployed on Vercel with real-time cloud sync capabilities.",
+  "name": "Kitchen Inventory HMTH ",
+  "description": "Professional inventory management system with operational asset tracking and damage reporting.",
   "requestFramePermissions": [
     "camera"
   ]

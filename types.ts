@@ -56,4 +56,5 @@ export interface Maintenance {
   date: string;
   technician: string;
   cost: number;
+  quantity: number;
 }

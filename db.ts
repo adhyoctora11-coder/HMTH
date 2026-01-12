@@ -9,8 +9,7 @@ const STORAGE_KEYS = {
   TRANSACTIONS: 'hmth_cloud_transactions_v3',
   MAINTENANCES: 'hmth_cloud_maintenances_v3',
   LAST_SYNC: 'hmth_cloud_sync_v3',
-  USER: 'hmth_cloud_user_v3',
-  CLOUD_FOLDER: 'AI Studio'
+  USER: 'hmth_cloud_user_v3'
 };
 
 class DatabaseService {
@@ -19,7 +18,6 @@ class DatabaseService {
   private maintenances: Maintenance[] = [];
   private currentUser: User | null = null;
   private lastSyncTime: string | null = localStorage.getItem(STORAGE_KEYS.LAST_SYNC);
-  private isSyncing: boolean = false;
 
   constructor() {
     this.init();
@@ -34,38 +32,7 @@ class DatabaseService {
         console.error("Failed to restore user session");
       }
     }
-
-    const urlParams = new URLSearchParams(window.location.search);
-    // Cek juga di hash jika menggunakan HashRouter
-    const hashPart = window.location.hash.includes('?') ? window.location.hash.split('?')[1] : '';
-    const hashParams = new URLSearchParams(hashPart);
-    
-    const syncToken = urlParams.get('sync') || hashParams.get('sync');
-
-    if (syncToken) {
-      try {
-        console.log("[Firebase/Cloud] Sinkronisasi masuk dideteksi...");
-        // Gunakan decodeURIComponent untuk menangani karakter spesial di URL
-        const decodedData = JSON.parse(atob(decodeURIComponent(syncToken)));
-        
-        if (decodedData && Array.isArray(decodedData.equipments)) {
-          this.equipments = decodedData.equipments;
-          this.transactions = decodedData.transactions || [];
-          this.maintenances = decodedData.maintenances || [];
-          
-          this.saveToStorage(false);
-          console.log("[Firebase/Cloud] Sinkronisasi Berhasil: Data telah digabungkan.");
-          
-          const cleanUrl = window.location.origin + window.location.pathname + window.location.hash.split('?')[0];
-          window.history.replaceState(null, "", cleanUrl);
-        }
-      } catch (e) {
-        console.error("[Firebase/Cloud] Token sinkronisasi tidak valid", e);
-        this.loadFromStorage();
-      }
-    } else {
-      this.loadFromStorage();
-    }
+    this.loadFromStorage();
   }
 
   private loadFromStorage() {
@@ -77,38 +44,13 @@ class DatabaseService {
       this.equipments = storedEq ? JSON.parse(storedEq) : [];
       this.transactions = storedTrx ? JSON.parse(storedTrx) : [];
       this.maintenances = storedMnt ? JSON.parse(storedMnt) : [];
-      
-      console.log(`[Firebase/Cloud] Repository lokal dimuat: ${this.equipments.length} aset ditemukan.`);
     } catch (e) {
       console.error("Gagal memuat local storage", e);
       this.equipments = [];
     }
   }
 
-  public async syncWithAIStudio() {
-    if (this.isSyncing) return;
-    this.isSyncing = true;
-    
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const timestamp = new Date().toLocaleString('id-ID', { 
-          day: '2-digit', 
-          month: 'short', 
-          year: 'numeric', 
-          hour: '2-digit', 
-          minute: '2-digit',
-          second: '2-digit'
-        });
-        this.lastSyncTime = timestamp;
-        localStorage.setItem(STORAGE_KEYS.LAST_SYNC, timestamp);
-        this.isSyncing = false;
-        console.log(`[Firebase/Cloud] Sinkronisasi selesai pada ${timestamp}`);
-        resolve(true);
-      }, 800);
-    });
-  }
-
-  private saveToStorage(updateSyncTimestamp = true) {
+  private saveToStorage() {
     localStorage.setItem(STORAGE_KEYS.EQUIPMENTS, JSON.stringify(this.equipments));
     localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(this.transactions));
     localStorage.setItem(STORAGE_KEYS.MAINTENANCES, JSON.stringify(this.maintenances));
@@ -116,31 +58,12 @@ class DatabaseService {
     if (this.currentUser) {
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(this.currentUser));
     }
-
-    if (updateSyncTimestamp) {
-      this.syncWithAIStudio();
-    }
+    
+    const timestamp = new Date().toLocaleString('id-ID');
+    this.lastSyncTime = timestamp;
+    localStorage.setItem(STORAGE_KEYS.LAST_SYNC, timestamp);
   }
 
-  public generateShareableCloudUrl(): string {
-    const data = {
-      equipments: this.equipments,
-      transactions: this.transactions,
-      maintenances: this.maintenances,
-      v: "3.2-firebase",
-      ts: Date.now()
-    };
-    // Gunakan encodeURIComponent untuk keamanan URL
-    const token = encodeURIComponent(btoa(JSON.stringify(data)));
-    
-    const baseUrl = window.location.origin + window.location.pathname;
-    const hash = window.location.hash.split('?')[0];
-    
-    return `${baseUrl}${hash}?sync=${token}`;
-  }
-
-  getLastSync() { return this.lastSyncTime; }
-  getCloudAccount() { return "cawangitm@harperhotels.com"; }
   getCurrentUser() { return this.currentUser; }
   
   login(email: string, pass: string): User | null {
@@ -162,8 +85,7 @@ class DatabaseService {
 
     if (user) {
       this.currentUser = user;
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
-      this.syncWithAIStudio();
+      this.saveToStorage();
       return user;
     }
     return null;
@@ -185,7 +107,7 @@ class DatabaseService {
       equipmentId: id,
       equipmentName: newEq.name,
       type: TransactionType.IN,
-      note: 'Aset terdaftar di Cloud Hosting'
+      note: 'Aset baru terdaftar'
     });
     this.saveToStorage();
     return newEq;
@@ -203,6 +125,37 @@ class DatabaseService {
 
   updateEquipment(id: string, updates: Partial<Equipment>) {
     this.equipments = this.equipments.map(e => e.id === id ? { ...e, ...updates } : e);
+    this.saveToStorage();
+  }
+
+  reportEquipmentBroken(id: string, quantity: number, note: string) {
+    const eq = this.equipments.find(e => e.id === id);
+    if (!eq || eq.status !== EquipmentStatus.ACTIVE) return;
+
+    const actualQty = Math.min(quantity, eq.stock);
+
+    if (actualQty >= eq.stock) {
+      this.updateEquipment(id, { status: EquipmentStatus.BROKEN });
+    } else {
+      this.updateEquipment(id, { stock: eq.stock - actualQty });
+      const brokenId = `EQ-${Math.floor(100 + Math.random() * 899)}`;
+      const brokenEq: Equipment = {
+        ...eq,
+        id: brokenId,
+        qrPath: brokenId,
+        stock: actualQty,
+        status: EquipmentStatus.BROKEN
+      };
+      this.equipments = [...this.equipments, brokenEq];
+    }
+
+    this.addTransaction({
+      equipmentId: id,
+      equipmentName: eq.name,
+      type: TransactionType.REPAIR,
+      note: `${actualQty} Unit Rusak: ${note || 'Tanpa catatan'}`
+    });
+    
     this.saveToStorage();
   }
 
@@ -228,12 +181,59 @@ class DatabaseService {
     return newTrx;
   }
 
-  getMaintenances() { return [...this.maintenances]; }
-  addMaintenance(m: Omit<Maintenance, 'id'>) {
+  getMaintenances() { return [...this.maintenances].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); }
+  
+  addMaintenance(m: Omit<Maintenance, 'id'>, updateStatus: boolean = false) {
+    const eq = this.equipments.find(e => e.id === m.equipmentId);
+    if (!eq) return null;
+
     const newM = { ...m, id: `MNT-${Math.floor(100 + Math.random() * 899)}` };
-    this.maintenances = [...this.maintenances, newM];
+    this.maintenances = [newM, ...this.maintenances];
+    
+    if (updateStatus) {
+      const actualQty = Math.min(m.quantity, eq.stock);
+      
+      if (actualQty >= eq.stock) {
+        // Jika semua unit diservis, ubah status equipment ini saja
+        this.updateEquipment(eq.id, { status: EquipmentStatus.UNDER_REPAIR });
+      } else {
+        // Jika hanya sebagian, kurangi stok aktif dan buat entry baru berstatus UNDER_REPAIR
+        this.updateEquipment(eq.id, { stock: eq.stock - actualQty });
+        const repairId = `EQ-${Math.floor(100 + Math.random() * 899)}`;
+        const repairEq: Equipment = {
+          ...eq,
+          id: repairId,
+          qrPath: repairId,
+          stock: actualQty,
+          status: EquipmentStatus.UNDER_REPAIR
+        };
+        this.equipments = [...this.equipments, repairEq];
+      }
+    }
+
+    this.addTransaction({
+      equipmentId: m.equipmentId,
+      equipmentName: m.equipmentName,
+      type: TransactionType.REPAIR,
+      note: `Service Log: ${m.quantity} Unit oleh ${m.technician}. Biaya: Rp ${m.cost.toLocaleString()}`
+    });
+    
     this.saveToStorage();
     return newM;
+  }
+
+  deleteMaintenance(id: string) {
+    const record = this.maintenances.find(m => m.id === id);
+    if (!record) return;
+    
+    this.maintenances = this.maintenances.filter(m => m.id !== id);
+    this.addTransaction({
+      equipmentId: record.equipmentId,
+      equipmentName: record.equipmentName,
+      type: TransactionType.OUT,
+      note: `Log Maintenance ${id} dihapus oleh Admin`
+    });
+    this.saveToStorage();
   }
 
   exportDatabase() {
@@ -241,14 +241,13 @@ class DatabaseService {
       equipments: this.equipments,
       transactions: this.transactions,
       maintenances: this.maintenances,
-      exportDate: new Date().toISOString(),
-      account: this.getCloudAccount()
+      exportDate: new Date().toISOString()
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `HMTH_Inventory_Master_${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `HMTH_Inventory_${new Date().toISOString().split('T')[0]}.json`;
     link.click();
     URL.revokeObjectURL(url);
   }

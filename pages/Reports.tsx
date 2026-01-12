@@ -15,7 +15,9 @@ import {
   Database,
   Upload,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Clock,
+  User as UserIcon
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -83,6 +85,7 @@ const Reports: React.FC = () => {
       'Barang': m.equipmentName,
       'Tanggal': m.date,
       'Teknisi': m.technician,
+      'Unit': m.quantity,
       'Biaya': m.cost
     }));
     const wsMnt = XLSX.utils.json_to_sheet(mntData);
@@ -97,7 +100,7 @@ const Reports: React.FC = () => {
       const success = await db.importDatabase(file);
       if (success) {
         setImportStatus({ success: true, message: "Database berhasil direstore!" });
-        setTimeout(() => window.location.reload(), 1500); // Reload to refresh all context
+        setTimeout(() => window.location.reload(), 1500); 
       } else {
         setImportStatus({ success: false, message: "Format file tidak valid." });
       }
@@ -173,8 +176,8 @@ const Reports: React.FC = () => {
               <div className="flex items-center space-x-4">
                 <div className="bg-blue-50 p-3 rounded-2xl text-blue-600"><Wrench size={24} /></div>
                 <div className="text-left">
-                  <h4 className="font-bold text-slate-900 text-lg">Maintenance ROI</h4>
-                  <p className="text-sm text-slate-500">Biaya perbaikan vs nilai barang.</p>
+                  <h4 className="font-bold text-slate-900 text-lg">Service Log Report</h4>
+                  <p className="text-sm text-slate-500">Laporan mendetail seluruh perbaikan.</p>
                 </div>
               </div>
               <ChevronRight className="text-slate-300 group-hover:text-blue-600" />
@@ -248,32 +251,44 @@ const Reports: React.FC = () => {
   );
 
   const renderMaintenanceDetail = () => {
-    const stats = equipments.map(e => {
-      const repairCosts = maintenances.filter(m => m.equipmentId === e.id).reduce((acc, curr) => acc + curr.cost, 0);
-      const repairCount = transactions.filter(t => t.equipmentId === e.id && t.type === 'Rusak').length;
-      return { name: e.name, repairs: repairCount, cost: repairCosts };
-    }).filter(s => s.repairs > 0 || s.cost > 0).sort((a, b) => b.cost - a.cost);
-
     return (
-      <div className="animate-in fade-in slide-in-from-left-4 duration-500">
+      <div className="animate-in fade-in slide-in-from-left-4 duration-500 space-y-6">
         <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm overflow-hidden">
-          <div className="p-8 border-b border-slate-50 font-bold text-xl flex items-center">
-             <Wrench className="mr-2 text-blue-600" /> Audit Pemeliharaan
+          <div className="p-8 border-b border-slate-50 font-bold text-xl flex items-center justify-between">
+             <div className="flex items-center"><Wrench className="mr-2 text-blue-600" /> Full Service Log Report</div>
+             <div className="text-sm font-bold text-slate-400 uppercase tracking-widest">{maintenances.length} Entries</div>
           </div>
-          <table className="w-full text-left">
-            <thead className="bg-slate-50 text-[10px] uppercase font-black text-slate-400">
-              <tr><th className="px-8 py-4">Barang</th><th className="px-8 py-4">Status Rusak</th><th className="px-8 py-4 text-right">Total Biaya</th></tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {stats.map((s, idx) => (
-                <tr key={idx} className="hover:bg-slate-50">
-                  <td className="px-8 py-4 font-bold">{s.name}</td>
-                  <td className="px-8 py-4 text-slate-500">{s.repairs} kali dilaporkan rusak</td>
-                  <td className="px-8 py-4 text-right font-bold">Rp {s.cost.toLocaleString()}</td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="bg-slate-50 text-[10px] uppercase font-black text-slate-400">
+                <tr>
+                  <th className="px-8 py-4">ID</th>
+                  <th className="px-8 py-4">Nama Aset</th>
+                  <th className="px-8 py-4">Tanggal</th>
+                  <th className="px-8 py-4">Teknisi</th>
+                  <th className="px-8 py-4">Unit</th>
+                  <th className="px-8 py-4 text-right">Biaya (IDR)</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-50 text-sm">
+                {maintenances.map((m) => (
+                  <tr key={m.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-8 py-4 font-mono text-slate-400">{m.id}</td>
+                    <td className="px-8 py-4 font-bold text-slate-900">{m.equipmentName}</td>
+                    <td className="px-8 py-4 text-slate-600 flex items-center gap-2"><Clock size={14}/> {m.date}</td>
+                    <td className="px-8 py-4 text-slate-600"><div className="flex items-center gap-2"><UserIcon size={14}/> {m.technician}</div></td>
+                    <td className="px-8 py-4 font-bold text-blue-600">{m.quantity} Unit</td>
+                    <td className="px-8 py-4 text-right font-black text-orange-600">Rp {m.cost.toLocaleString()}</td>
+                  </tr>
+                ))}
+                {maintenances.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-8 py-12 text-center text-slate-400 italic">Belum ada riwayat service log yang tercatat.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     );
@@ -359,7 +374,7 @@ const Reports: React.FC = () => {
             <h1 className="text-3xl font-bold text-slate-900">
               {activeView === 'DASHBOARD' ? 'Reports & Analytics' : 
                activeView === 'VALUATION' ? 'Inventory Valuation' :
-               activeView === 'MAINTENANCE' ? 'Maintenance Audit' : 
+               activeView === 'MAINTENANCE' ? 'Service Log Report' : 
                activeView === 'VENDOR' ? 'Vendor Performance' : 'Backup & Restore'}
             </h1>
             <p className="text-slate-500">Monitor kitchen efficiency and asset health</p>
@@ -378,18 +393,6 @@ const Reports: React.FC = () => {
       {activeView === 'MAINTENANCE' && renderMaintenanceDetail()}
       {activeView === 'VENDOR' && renderVendorAudit()}
       {activeView === 'DATABASE' && renderDatabaseTools()}
-
-      <div className="bg-orange-50 p-8 rounded-[32px] border border-orange-100 flex items-start space-x-6">
-        <div className="bg-white p-4 rounded-2xl text-orange-600 shadow-sm shadow-orange-100">
-          <PieChartIcon size={24} />
-        </div>
-        <div className="space-y-2">
-          <h4 className="font-bold text-orange-900 text-lg">Data Persistence Status</h4>
-          <p className="text-orange-800/80 leading-relaxed text-sm">
-            Seluruh data yang Anda input otomatis tersimpan di browser (Local Storage). Untuk membagikan data ini ke perangkat lain, gunakan fitur <strong>Backup & Restore</strong> di menu ini untuk mendownload file data dan menguploadnya di perangkat tujuan.
-          </p>
-        </div>
-      </div>
     </div>
   );
 };

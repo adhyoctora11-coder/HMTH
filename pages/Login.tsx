@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ChefHat, Mail, Lock, ArrowRight, AlertCircle, Cloud, FolderOpen } from 'lucide-react';
+import { ChefHat, Mail, Lock, ArrowRight, AlertCircle, ShieldCheck, FolderOpen } from 'lucide-react';
 
 interface LoginProps {
   onLogin: (email: string, pass: string) => boolean;
@@ -37,8 +37,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           </div>
           <h1 className="text-3xl font-black tracking-tight relative z-10">Kitchen HMTH</h1>
           <div className="flex items-center justify-center space-x-2 mt-2 text-orange-400 font-bold relative z-10">
-             <Cloud size={16} />
-             <span className="text-xs uppercase tracking-widest">AI Studio Backend Sync</span>
+             <ShieldCheck size={16} />
+             <span className="text-xs uppercase tracking-widest">Authorized Access Only</span>
           </div>
         </div>
         
@@ -58,7 +58,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 <input 
                   type="text" 
                   required
-                  placeholder="cawangitm@harperhotels.com"
+                  placeholder="ID Akun"
                   className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-orange-100 focus:border-orange-600 focus:outline-none transition-all font-medium"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -85,14 +85,14 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             type="submit"
             className="w-full bg-slate-900 hover:bg-black text-white font-black py-4 rounded-2xl transition-all shadow-xl shadow-slate-200 flex items-center justify-center group transform active:scale-95"
           >
-            <span>Connect to AI Studio</span>
+            <span>Login ke Dashboard</span>
             <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform text-orange-500" size={20} />
           </button>
 
           <div className="text-center pt-2">
             <div className="inline-flex items-center space-x-2 bg-slate-100 px-4 py-2 rounded-full text-[10px] text-slate-500 font-bold uppercase tracking-wider">
-               <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-ping"></div>
-               <span>Mirroring: AI Studio Folder @ Harper Hotels</span>
+               <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]"></div>
+               <span>Secure Local Storage Active</span>
             </div>
           </div>
         </form>
