@@ -1,0 +1,31 @@
+
+# PANDUAN PUBLISH KE VERCEL (HMTH INVENTORY)
+
+Vercel adalah cara tercepat untuk menghosting aplikasi Anda. Pilih salah satu metode di bawah ini:
+
+### METODE 1: MENGGUNAKAN DASHBOARD (TANPA CODING)
+1. Upload folder aplikasi ini ke repository GitHub (Private atau Public).
+2. Login ke https://vercel.com/
+3. Klik "Add New" -> "Project".
+4. Import repository GitHub Anda.
+5. Pada bagian "Build and Output Settings", pastikan:
+   - Framework Preset: Other (karena kita menggunakan struktur custom es6 modules).
+   - Root Directory: ./
+6. Klik "Deploy".
+
+### METODE 2: MENGGUNAKAN VERCEL CLI (CEPAT)
+1. Buka Terminal / Command Prompt di folder aplikasi ini.
+2. Install Vercel CLI:
+   npm install -g vercel
+3. Jalankan perintah login:
+   vercel login
+4. Jalankan perintah deploy:
+   vercel --prod
+5. Ikuti instruksi di layar (tekan Enter untuk pilihan default).
+
+### KEUNGGULAN DI VERCEL:
+- Link otomatis menggunakan HTTPS (Aman).
+- Update otomatis setiap kali Anda melakukan 'git push'.
+- Performa sangat cepat (Edge Network).
+
+Catatan: Fitur "Share Data" tetap berfungsi normal di Vercel untuk sinkronisasi antar perangkat.

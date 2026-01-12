@@ -1,6 +1,6 @@
 {
-  "name": "Copy of Copy of Copy of Kitchen Inventory Pro",
-  "description": "Professional kitchen equipment inventory management system with QR code tracking, transaction logging, and maintenance scheduling.",
+  "name": "Kitchen Inventory HMTH - Vercel Edition",
+  "description": "Professional inventory management system deployed on Vercel with real-time cloud sync capabilities.",
   "requestFramePermissions": [
     "camera"
   ]

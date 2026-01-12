@@ -63,7 +63,8 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
     { name: 'Reports', path: '/reports', icon: BarChart3 },
   ];
 
-  const NavLink = ({ item }: { item: typeof navItems[0] }) => {
+  // Fix: Explicitly defining NavLink as a React.FC to correctly handle the 'key' prop when mapping in JSX
+  const NavLink: React.FC<{ item: typeof navItems[0] }> = ({ item }) => {
     const isActive = location.pathname === item.path;
     return (
       <Link
