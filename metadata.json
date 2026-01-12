@@ -1,0 +1,7 @@
+{
+  "name": "Copy of Copy of Copy of Kitchen Inventory Pro",
+  "description": "Professional kitchen equipment inventory management system with QR code tracking, transaction logging, and maintenance scheduling.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

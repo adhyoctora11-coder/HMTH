@@ -1,0 +1,30 @@
+
+CARA PUBLISH KE FIREBASE HOSTING (HMTH INVENTORY)
+
+1. BUAT PROJECT DI FIREBASE
+   - Pergi ke https://console.firebase.google.com/
+   - Klik "Add Project" dan buat project baru.
+   - Catat "Project ID" yang muncul.
+
+2. EDIT FILE .firebaserc
+   - Buka file .firebaserc di folder aplikasi ini.
+   - Ganti "GANTI-DENGAN-PROJECT-ID-ANDA" dengan ID asli project Anda.
+
+3. JALANKAN TERMINAL (COMMAND PROMPT)
+   Jalankan urutan perintah ini:
+   
+   a. Install Firebase tools (jika belum):
+      npm install -g firebase-tools
+
+   b. Login ke akun Google Anda:
+      firebase login
+
+   c. Deploy aplikasi:
+      firebase deploy --only hosting
+
+4. CARA BERBAGI DATABASE (SYNC)
+   - Setelah web tayang di URL .web.app atau .firebaseapp.com
+   - Input data inventory Anda.
+   - Klik tombol "SHARE DATA" di menu sidebar.
+   - Salin link yang muncul.
+   - Kirim link tersebut ke tim Anda. Saat mereka membuka link tersebut, database di HP mereka akan otomatis terisi dengan data yang Anda buat.
